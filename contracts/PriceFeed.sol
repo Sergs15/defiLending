@@ -14,6 +14,7 @@ contract PriceFeed {
     function getLatestEthPriceInUSD() public view returns(int){
         // (,int answer,,,)=dataFeed.latestRoundData();
         // return answer;
+        //TODO use getChainlinkDataFeedLatestAnswer properly when oracle is implemented
         return 1;
     }
     

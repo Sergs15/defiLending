@@ -60,7 +60,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     {
         require(
             btzToken.transfer(_msgSender(), loanAmount),
-            "LINK transfer failed"
+            "Transfer failed"
         );
 
         IERC20 collateralToken = IERC20(collateral.tokenAddress);
@@ -131,7 +131,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     {
         require(
             btzToken.transferFrom(_msgSender(), address(this), loanAmount),
-            "LINK transfer failed"
+            "Transfer failed"
         );
 
         totalMoneyOnLoanByUser[_msgSender()] -= loanAmount;
@@ -364,7 +364,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
                 break;
             }
         }
-        require(isAllowed, "Collateral address not allowed");
+        require(isAllowed, CollateralAddressNotAllowed());
         _;
     }
 

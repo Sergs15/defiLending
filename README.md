@@ -1,6 +1,6 @@
 # DefiLending
 
-**DefiLending** is a decentralized finance (DeFi) smart contract system that allows users to deposit cryptocurrency as collateral, borrow tokens, and repay loans. It accepts LINK tokens as collateral and returns its own token, BTZ Token, in exchange.
+**DefiLending** is a decentralized finance (DeFi) smart contract system that allows users to deposit cryptocurrency as collateral, borrow tokens, and repay loans. It accepts a predefined tokens as collateral and returns its own token, BTZ Token, in exchange.
 
 ## Features
 - **Collateralized Lending:** Users can deposit supported tokens as collateral to borrow funds.
@@ -26,6 +26,7 @@ Add support for multiple collateral token types.
 Integrate Chainlink price feeds for real-world data.
 Build a frontend for user interaction.
 Implement advanced liquidation mechanisms.
+
 License
 
 This project is licensed under the MIT License.

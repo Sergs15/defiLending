@@ -130,7 +130,8 @@ describe("DefiLending Contract", function () {
       userAddress
     );
 
-    expect(loanBalance).to.equal(1000);
-    expect(collateralBalance).to.equal(2000);
+    expect(loanBalance).to.equal(loanAmount);
+    expect(collateralBalance).to.equal(collateralAmount);
   });
+
 });
