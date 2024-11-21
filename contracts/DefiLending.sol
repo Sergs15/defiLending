@@ -24,8 +24,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     uint256 loanInterest;
     uint256 collateralToLoanRate = 1; //For simplicity
 
-    constructor() Ownable(msg.sender) {
-        _disableInitializers();
+    constructor() Ownable(_msgSender()) {
     }
 
     /// @notice Initialize the contract with the required addresses and parameters.
@@ -38,7 +37,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
         address collateralToken,
         address priceFeedAddress,
         uint256 _loanInterest
-    ) public payable initializer onlyValidAddress(_btzToken) {
+    ) public initializer() onlyValidAddress(_btzToken) {
         btzToken = BTZToken(_btzToken);
         collateralAddressesAllowed.push(address(collateralToken));
         priceFeed = PriceFeed(priceFeedAddress);
@@ -60,24 +59,24 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
         nonReentrant
     {
         require(
-            btzToken.transfer(msg.sender, loanAmount),
+            btzToken.transfer(_msgSender(), loanAmount),
             "LINK transfer failed"
         );
 
         IERC20 collateralToken = IERC20(collateral.tokenAddress);
         collateralToken.transferFrom(
-            msg.sender,
+            _msgSender(),
             address(this),
             collateral.tokenAmount
         );
 
-        if (!userExists(msg.sender)) {
-            addActiveUser(msg.sender);
+        if (!userExists(_msgSender())) {
+            addActiveUser(_msgSender());
         }
-        collateralsByUser[msg.sender] += collateral.tokenAmount;
-        totalMoneyOnLoanByUser[msg.sender] += loanAmount;
+        collateralsByUser[_msgSender()] += collateral.tokenAmount;
+        totalMoneyOnLoanByUser[_msgSender()] += loanAmount;
 
-        emit LoanIssued(msg.sender, loanAmount);
+        emit LoanIssued(_msgSender(), loanAmount);
     }
 
     /// @notice Deposit collateral without borrowing any loan.
@@ -87,18 +86,18 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     ) external payable onlyValidCollateral(collateral) nonReentrant {
         IERC20 collateralToken = IERC20(collateral.tokenAddress);
         collateralToken.transferFrom(
-            msg.sender,
+            _msgSender(),
             address(this),
             collateral.tokenAmount
         );
 
-        if (!userExists(msg.sender)) {
-            addActiveUser(msg.sender);
+        if (!userExists(_msgSender())) {
+            addActiveUser(_msgSender());
         }
-        collateralsByUser[msg.sender] += collateral.tokenAmount;
+        collateralsByUser[_msgSender()] += collateral.tokenAmount;
 
         emit CollateralDeposited(
-            msg.sender,
+            _msgSender(),
             collateral.tokenAddress,
             collateral.tokenAmount
         );
@@ -110,13 +109,13 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
         uint256 loanAmount
     ) external payable checkMoneyCanBeLend(loanAmount) nonReentrant {
         require(
-            btzToken.transfer(msg.sender, loanAmount),
+            btzToken.transfer(_msgSender(), loanAmount),
             "BTZ transfer failed"
         );
 
-        totalMoneyOnLoanByUser[msg.sender] += loanAmount;
+        totalMoneyOnLoanByUser[_msgSender()] += loanAmount;
 
-        emit LoanIssued(msg.sender, loanAmount);
+        emit LoanIssued(_msgSender(), loanAmount);
     }
 
     /// @notice Repay a part of the outstanding loan in BTZ tokens.
@@ -131,16 +130,16 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
         nonReentrant
     {
         require(
-            btzToken.transferFrom(msg.sender, address(this), loanAmount),
+            btzToken.transferFrom(_msgSender(), address(this), loanAmount),
             "LINK transfer failed"
         );
 
-        totalMoneyOnLoanByUser[msg.sender] -= loanAmount;
-        emit LoanRepaid(msg.sender, loanAmount);
+        totalMoneyOnLoanByUser[_msgSender()] -= loanAmount;
+        emit LoanRepaid(_msgSender(), loanAmount);
 
-        if (totalMoneyOnLoanByUser[msg.sender] == 0) {
-            removeActiveUser(msg.sender);
-            emit LoanFullyRepaid(msg.sender);
+        if (totalMoneyOnLoanByUser[_msgSender()] == 0) {
+            removeActiveUser(_msgSender());
+            emit LoanFullyRepaid(_msgSender());
         }
     }
 
@@ -153,9 +152,9 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     {
         require(
             btzToken.transferFrom(
-                msg.sender,
+                _msgSender(),
                 address(this),
-                totalMoneyOnLoanByUser[msg.sender]
+                totalMoneyOnLoanByUser[_msgSender()]
             ),
             "BTZ transfer failed"
         );
@@ -163,22 +162,22 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
             IERC20 collateralToken = IERC20(collateralAddressesAllowed[i]);
             require(
                 collateralToken.transfer(
-                    msg.sender,
-                    collateralsByUser[msg.sender]
+                    _msgSender(),
+                    collateralsByUser[_msgSender()]
                 ),
                 "Transfer failed"
             );
-            uint256 tokenAmount = collateralsByUser[msg.sender];
-            collateralsByUser[msg.sender] = 0;
+            uint256 tokenAmount = collateralsByUser[_msgSender()];
+            collateralsByUser[_msgSender()] = 0;
             emit CollateralWithdrawn(
-                msg.sender,
+                _msgSender(),
                 collateralAddressesAllowed[i],
                 tokenAmount
             );
         }
-        totalMoneyOnLoanByUser[msg.sender] = 0;
-        removeActiveUser(msg.sender);
-        emit LoanFullyRepaid(msg.sender);
+        totalMoneyOnLoanByUser[_msgSender()] = 0;
+        removeActiveUser(_msgSender());
+        emit LoanFullyRepaid(_msgSender());
     }
 
     /// @notice Withdraw a portion of the collateral that is not locked by the loan.
@@ -194,14 +193,14 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     {
         IERC20 collateralToken = IERC20(collateral.tokenAddress);
         require(
-            collateralToken.transfer(msg.sender, collateral.tokenAmount),
+            collateralToken.transfer(_msgSender(), collateral.tokenAmount),
             "Transfer failed"
         );
 
-        collateralsByUser[msg.sender] -= collateral.tokenAmount;
+        collateralsByUser[_msgSender()] -= collateral.tokenAmount;
 
         emit CollateralWithdrawn(
-            msg.sender,
+            _msgSender(),
             collateral.tokenAddress,
             collateral.tokenAmount
         );
@@ -312,7 +311,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
 
     modifier checkCollateralCanBeWithdrawn(uint256 collateralAmount) {
         if (
-            totalMoneyOnLoanByUser[msg.sender] >
+            totalMoneyOnLoanByUser[_msgSender()] >
             calculateMaxLoanAmount(collateralAmount)
         ) {
             revert MoneyOnLoanIsGreaterThanCollateral();
@@ -322,8 +321,8 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
 
     modifier checkMoneyCanBeLend(uint256 loanAmount) {
         if (
-            calculateMaxLoanAmount(collateralsByUser[msg.sender]) <
-            loanAmount + totalMoneyOnLoanByUser[msg.sender]
+            calculateMaxLoanAmount(collateralsByUser[_msgSender()]) <
+            loanAmount + totalMoneyOnLoanByUser[_msgSender()]
         ) {
             revert CollateralAmountNotEnough();
         }
@@ -331,7 +330,7 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     }
 
     modifier checkMoneyNotExceedsTotal(uint256 loanAmount) {
-        if (loanAmount > totalMoneyOnLoanByUser[msg.sender]) {
+        if (loanAmount > totalMoneyOnLoanByUser[_msgSender()]) {
             revert LoanAmountIsGreaterThanUsersDebt();
         }
         _;
@@ -370,8 +369,8 @@ contract DefiLending is IDefiLending, ReentrancyGuard, Ownable, Initializable {
     }
 
     modifier onlyUsersWithLoans() {
-        if (totalMoneyOnLoanByUser[msg.sender] <= 0) {
-            revert UserDoesNotHaveAnyLoan(msg.sender);
+        if (totalMoneyOnLoanByUser[_msgSender()] <= 0) {
+            revert UserDoesNotHaveAnyLoan(_msgSender());
         }
         _;
     }
